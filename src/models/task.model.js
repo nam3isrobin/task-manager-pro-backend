@@ -28,8 +28,12 @@ const TaskSchema = new mongoose.Schema({
   }],
   attachments: [{
     fileName: String,
+    filename: String,
+    originalName: String,
     fileUrl: String,
-    uploadedAt: { type: Date, default: Date.now }
+    url: String,
+    uploadedAt: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now }
   }],
   isDeleted: { type: Boolean, default: false, index: true },
   deletedAt: { type: Date }

@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -21,25 +22,48 @@ if (process.env.NODE_ENV !== 'test') {
 
 const app = express();
 
-// Security and utility middleware
-app.use(helmet());
-app.use(cors());
+// Security headers with cross-origin asset resource policy enabled
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// Production-ready CORS configuration
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((item) => item.trim())
+    : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+};
+app.use(cors(corsOptions));
+
+// Request body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Apply rate limiting to API routes
-app.use('/api', apiLimiter);
+// Serve static uploaded files (avatars, attachments, media)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+// Health check endpoint handler
+const healthCheckHandler = (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Task Manager Pro API is running smoothly',
     timestamp: new Date().toISOString(),
   });
-});
+};
 
-// Mount Routes
+// Mount health routes
+app.get('/health', healthCheckHandler);
+app.get('/api/health', healthCheckHandler);
+
+// Apply rate limiting to all standard API routes
+app.use('/api', apiLimiter);
+
+// Mount Application Routes
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/tasks', require('./routes/task.routes'));
 app.use('/api/users', require('./routes/user.routes'));
